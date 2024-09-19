@@ -1,55 +1,50 @@
 package com.ConfigureTwoDbApi.config;
 
-import org.hibernate.jpa.boot.spi.EntityManagerFactoryBuilder;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.jdbc.DataSourceBuilder;
+import org.springframework.boot.orm.jpa.EntityManagerFactoryBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.orm.jpa.JpaTransactionManager;
 import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean;
-import org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter;
 import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.annotation.EnableTransactionManagement;
 
 import javax.sql.DataSource;
+import java.util.HashMap;
 
 @Configuration
+@EnableTransactionManagement
 @EnableJpaRepositories(
-        basePackages = "com.ConfigureTwoDbApi.repo.read",
         entityManagerFactoryRef = "readEntityManagerFactory",
-        transactionManagerRef = "readTransactionManager"
+        transactionManagerRef = "readTransactionManager",
+        basePackages = "com.ConfigureTwoDbApi.repo.read"
 )
 public class ReadDbConfig {
 
     @Bean(name = "readDataSource")
-    public DataSource readDataSource() {
-        return DataSourceBuilder.create()
-                .url("jdbc:mysql://localhost:3306/DbRead")
-                .username("root")
-                .password("password")
-                .driverClassName("com.mysql.cj.jdbc.Driver")
-                .build();
+    @ConfigurationProperties(prefix = "spring.datasource.read")
+    public DataSource dataSource() {
+        return DataSourceBuilder.create().build();
     }
 
-
-//    @Bean(name = "readEntityManagerFactory")
-//    public LocalContainerEntityManagerFactoryBean readEntityManagerFactory(
-//            EntityManagerFactoryBuilder builder,
-//            @Qualifier("readDataSource") DataSource readDataSource) {
-//        return builder
-//                .dataSource(readDataSource)
-//                .packages("com.ConfigureTwoDbApi.entity")
-//                .persistenceUnit("read")
-//                .build();
-//    }
     @Bean(name = "readEntityManagerFactory")
     public LocalContainerEntityManagerFactoryBean readEntityManagerFactory(
-            @Qualifier("readDataSource") DataSource readDataSource) {
-        LocalContainerEntityManagerFactoryBean factoryBean = new LocalContainerEntityManagerFactoryBean();
-        factoryBean.setDataSource(readDataSource);
-        factoryBean.setPackagesToScan("com.ConfigureTwoDbApi.entity");
-        factoryBean.setJpaVendorAdapter(new HibernateJpaVendorAdapter());
-        return factoryBean;
+            EntityManagerFactoryBuilder builder,
+            @Qualifier("readDataSource") DataSource dataSource) {
+
+        HashMap<String, Object> properties = new HashMap<>();
+        properties.put("hibernate.hbm2ddl.auto", "update");
+        properties.put("hibernate.dialect", "org.hibernate.dialect.MySQL8Dialect");
+
+        return builder
+                .dataSource(dataSource)
+                .packages("com.ConfigureTwoDbApi.entity")
+                .persistenceUnit("read")
+                .properties(properties)
+                .build();
     }
 
     @Bean(name = "readTransactionManager")

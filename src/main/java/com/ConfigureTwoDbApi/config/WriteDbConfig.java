@@ -1,45 +1,56 @@
 package com.ConfigureTwoDbApi.config;
 
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.jdbc.DataSourceBuilder;
+import org.springframework.boot.orm.jpa.EntityManagerFactoryBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.orm.jpa.JpaTransactionManager;
 import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean;
-import org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter;
 import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.annotation.EnableTransactionManagement;
 
 import javax.sql.DataSource;
+import java.util.HashMap;
 
 @Configuration
+@EnableTransactionManagement
 @EnableJpaRepositories(
-        basePackages = "com.ConfigureTwoDbApi.repo.write",
         entityManagerFactoryRef = "writeEntityManagerFactory",
-        transactionManagerRef = "writeTransactionManager"
+        transactionManagerRef = "writeTransactionManager",
+        basePackages = "com.ConfigureTwoDbApi.repo.write"
 )
 public class WriteDbConfig {
 
+    @Primary
     @Bean(name = "writeDataSource")
-    public DataSource writeDataSource() {
-        return DataSourceBuilder.create()
-                .url("jdbc:mysql://localhost:3306/DbWrite")
-                .username("root")
-                .password("password")
-                .driverClassName("com.mysql.cj.jdbc.Driver")
+    @ConfigurationProperties(prefix = "spring.datasource.write")
+    public DataSource dataSource() {
+        return DataSourceBuilder.create().build();
+    }
+
+    @Primary
+    @Bean(name = "writeEntityManagerFactory")
+    public LocalContainerEntityManagerFactoryBean writeEntityManagerFactory(
+            EntityManagerFactoryBuilder builder,
+            @Qualifier("writeDataSource") DataSource dataSource) {
+
+        HashMap<String, Object> properties = new HashMap<>();
+        properties.put("hibernate.hbm2ddl.auto", "update");
+        properties.put("hibernate.dialect", "org.hibernate.dialect.MySQL8Dialect");
+
+        return builder
+                .dataSource(dataSource)
+                .packages("com.ConfigureTwoDbApi.entity")
+                .persistenceUnit("write")
+                .properties(properties)
                 .build();
     }
 
-    @Bean(name = "writeEntityManagerFactory")
-    public LocalContainerEntityManagerFactoryBean writeEntityManagerFactory(
-            @Qualifier("writeDataSource") DataSource writeDataSource) {
-        LocalContainerEntityManagerFactoryBean factoryBean = new LocalContainerEntityManagerFactoryBean();
-        factoryBean.setDataSource(writeDataSource);
-        factoryBean.setPackagesToScan("com.ConfigureTwoDbApi.entity");
-        factoryBean.setJpaVendorAdapter(new HibernateJpaVendorAdapter());
-        return factoryBean;
-    }
-
+    @Primary
     @Bean(name = "writeTransactionManager")
     public PlatformTransactionManager writeTransactionManager(
             @Qualifier("writeEntityManagerFactory") LocalContainerEntityManagerFactoryBean writeEntityManagerFactory) {
