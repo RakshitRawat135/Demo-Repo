@@ -38,17 +38,13 @@ public class WriteDbConfig {
             EntityManagerFactoryBuilder builder,
             @Qualifier("writeDataSource") DataSource dataSource) {
 
-        HashMap<String, Object> properties = new HashMap<>();
-        properties.put("hibernate.hbm2ddl.auto", "update");
-        properties.put("hibernate.dialect", "org.hibernate.dialect.MySQL8Dialect");
-
         return builder
                 .dataSource(dataSource)
                 .packages("com.ConfigureTwoDbApi.entity")
                 .persistenceUnit("write")
-                .properties(properties)
                 .build();
     }
+
 
     @Primary
     @Bean(name = "writeTransactionManager")

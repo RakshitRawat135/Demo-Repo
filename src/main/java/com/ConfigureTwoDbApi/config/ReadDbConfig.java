@@ -35,17 +35,13 @@ public class ReadDbConfig {
             EntityManagerFactoryBuilder builder,
             @Qualifier("readDataSource") DataSource dataSource) {
 
-        HashMap<String, Object> properties = new HashMap<>();
-        properties.put("hibernate.hbm2ddl.auto", "update");
-        properties.put("hibernate.dialect", "org.hibernate.dialect.MySQL8Dialect");
-
         return builder
                 .dataSource(dataSource)
                 .packages("com.ConfigureTwoDbApi.entity")
                 .persistenceUnit("read")
-                .properties(properties)
                 .build();
     }
+
 
     @Bean(name = "readTransactionManager")
     public PlatformTransactionManager readTransactionManager(
